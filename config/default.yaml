@@ -1,0 +1,28 @@
+llm:
+  provider: claude
+  model: claude-sonnet-4-20250514
+  max_tokens: 4096
+  temperature: 0.3
+
+knowledge:
+  retrieval_limit: 2000
+  top_k: 5
+  vector_enabled: false  # Enable in Phase 2
+
+critique:
+  severity_threshold: low
+  tone: opinionated  # opinionated | balanced | gentle
+  categories:
+    - visual_hierarchy
+    - typography
+    - colour
+    - spacing
+    - layout
+    - accessibility
+    - interaction_patterns
+    - consistency
+    - information_architecture
+
+output:
+  format: markdown  # markdown | json | yaml
+  directory: ./output
