@@ -293,6 +293,9 @@ URL/Screenshot/Description
 [LLM Agents] -- Single agent, 4 specialized agents, or N-model ensemble
     |
     v
+[Reconciliation] -- Cross-checks sub-agent findings, removes contradictions
+    |
+    v
 [Synthesis] -- (ensemble only) Cross-model consensus analysis
     |
     v
@@ -303,20 +306,26 @@ URL/Screenshot/Description
 
 The programmatic WCAG checker evaluates 11 criteria with 100% accuracy:
 
-| Criterion | What it checks |
-|---|---|
-| 1.3.1 Info and Relationships | Landmarks (main, nav, header, footer) + heading hierarchy |
-| 1.4.1 Use of Color | Flagged for manual review |
-| 1.4.3 Contrast (Minimum) | All text/background pairs against 4.5:1 (AA) and 3:1 (large) |
-| 1.4.11 Non-text Contrast | UI component boundaries against 3:1 |
-| 2.4.1 Bypass Blocks | Skip link presence |
-| 2.4.7 Focus Visible | Stylesheet scanning for :focus-visible rules |
-| 2.5.5 Target Size (Enhanced) | 44x44px (AAA) |
-| 2.5.8 Target Size (Minimum) | 24x24px (AA) |
-| 3.1.1 Language of Page | lang attribute on html |
-| 4.1.2 Name, Role, Value | Form inputs with programmatic labels |
+| Criterion | Level | What it checks |
+|---|---|---|
+| 1.3.1 Info and Relationships | A | Landmarks (main, nav, header, footer) + heading hierarchy |
+| 1.4.1 Use of Color | A | Flagged for manual review |
+| 1.4.3 Contrast (Minimum) | AA | All text/background pairs against 4.5:1 and 3:1 (large) |
+| 1.4.11 Non-text Contrast | AA | UI component boundaries against 3:1 |
+| 2.4.1 Bypass Blocks | A | Skip link presence |
+| 2.4.7 Focus Visible | AA | Stylesheet scanning for :focus-visible rules |
+| 2.5.8 Target Size (Minimum) | AA | 24x24px minimum |
+| 2.5.5 Target Size (Enhanced) | AAA | 44x44px (aspirational, not required) |
+| 3.1.1 Language of Page | A | lang attribute on html |
+| 4.1.2 Name, Role, Value | A | Form inputs with programmatic labels |
 
-Alpha-composited contrast calculation handles semi-transparent backgrounds correctly (e.g. `rgba(34, 197, 94, 0.19)` on a dark surface).
+The report separates A/AA failures (must fix for compliance) from AAA (aspirational, nice to have). WCAG score is calculated on A/AA criteria only.
+
+Additional accuracy features:
+- Alpha-composited contrast handles semi-transparent backgrounds (e.g. `rgba(34, 197, 94, 0.19)` on a dark surface)
+- Off-screen elements (skip links) excluded from touch target checks
+- Multi-page violations deduplicated by unique element
+- Sub-agent reconciliation pass removes contradictions between sections
 
 ### What the LLM adds (subjective judgment)
 
