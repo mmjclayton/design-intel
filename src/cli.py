@@ -10,6 +10,8 @@ from src.input.processor import process_input
 from src.agents.critique import CritiqueAgent
 from src.agents.orchestrator import run_multi_agent_critique
 from src.analysis.wcag_checker import run_wcag_check, run_wcag_check_multi
+from src.analysis.interaction_tester import run_interaction_tests
+from src.analysis.component_detector import detect_and_score_components, detect_and_score_multi
 from src.analysis.history import (
     build_run_record, save_run, get_previous_run, compute_diff, load_history,
 )
@@ -92,8 +94,32 @@ def critique(
             wcag_report = run_wcag_check(design_input.dom_data)
 
     if deep:
+        # Run interaction tests and component scoring alongside agents
+        interaction_report = None
+        component_report = None
+        if url:
+            with console.status("Running interaction tests..."):
+                try:
+                    interaction_report = run_interaction_tests(url, viewport_width=vw, viewport_height=vh)
+                except Exception:
+                    pass
+            with console.status("Detecting and scoring components..."):
+                try:
+                    if design_input.pages and len(design_input.pages) > 1:
+                        component_report = detect_and_score_multi(design_input.pages)
+                    else:
+                        component_report = detect_and_score_components(design_input.dom_data)
+                except Exception:
+                    pass
+
         with console.status("Running multi-agent deep analysis (4 agents in parallel)..."):
             result = run_multi_agent_critique(design_input, context=combined_context)
+
+        # Append deterministic reports
+        if interaction_report:
+            result += "\n\n---\n\n" + interaction_report.to_markdown()
+        if component_report and component_report.components:
+            result += "\n\n---\n\n" + component_report.to_markdown()
     else:
         with console.status("Generating critique..."):
             agent = CritiqueAgent(tone=tone)
@@ -168,6 +194,56 @@ def wcag(
 
     if save:
         path = save_report(result, "wcag-audit")
+        console.print(f"\nSaved to {path}")
+
+
+@app.command()
+def test_interactions(
+    url: str = typer.Option(..., "--url", "-u", help="URL to test"),
+    device: Optional[str] = typer.Option(None, "--device", help=f"Device preset: {', '.join(DEVICE_PRESETS.keys())}"),
+    save: bool = typer.Option(False, "--save", "-s", help="Save report to output/"),
+):
+    """Run interaction tests - keyboard nav, form validation, empty states, responsive."""
+    vw, vh = 1440, 900
+    if device:
+        preset = DEVICE_PRESETS.get(device)
+        if preset:
+            vw, vh = preset["width"], preset["height"]
+            console.print(f"Using device: {preset['label']} ({vw}x{vh})")
+
+    with console.status("Running interaction tests..."):
+        report = run_interaction_tests(url, viewport_width=vw, viewport_height=vh)
+
+    result = report.to_markdown()
+    console.print(Markdown(result))
+
+    if save:
+        path = save_report(result, "interaction-tests")
+        console.print(f"\nSaved to {path}")
+
+
+@app.command()
+def components(
+    url: str = typer.Option(..., "--url", "-u", help="URL to analyse"),
+    crawl: bool = typer.Option(False, "--crawl", help="Crawl multiple pages"),
+    max_pages: int = typer.Option(10, "--max-pages", help="Max pages to crawl"),
+    save: bool = typer.Option(False, "--save", "-s", help="Save report to output/"),
+):
+    """Detect and score individual UI components."""
+    with console.status("Analysing components..."):
+        design_input = process_input(url=url, crawl=crawl, max_pages=max_pages)
+
+    with console.status("Scoring components..."):
+        if design_input.pages and len(design_input.pages) > 1:
+            report = detect_and_score_multi(design_input.pages)
+        else:
+            report = detect_and_score_components(design_input.dom_data)
+
+    result = report.to_markdown()
+    console.print(Markdown(result))
+
+    if save:
+        path = save_report(result, "components")
         console.print(f"\nSaved to {path}")
 
 
