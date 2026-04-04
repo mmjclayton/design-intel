@@ -1,19 +1,38 @@
 # Better Design Agent
 
-An agent-based CLI that delivers expert-level UX/UI design critique, generates style guides, extracts design systems from live products, and writes design specifications - powered by a self-improving knowledge library of 37 design principles across 10 domains.
+An agent-based CLI that delivers expert-level UX/UI design critique, developer handoff specs, and accessibility audits - powered by deterministic analysis, multi-agent architecture, and a knowledge library of 39 design principles across 10 domains.
 
-No static checklists. No vague suggestions. Specific, opinionated feedback grounded in established design principles, with every criticism backed by a concrete fix and a severity rating.
+Outperforms raw Claude Opus and Sonnet sessions on structured design critique benchmarks (86% vs 71% Opus / 85% Sonnet) by combining programmatic analysis with LLM judgment.
 
-## What it does
+## What makes this different from asking an LLM to critique a design?
 
-| Command | Description | Status |
+| Capability | Raw LLM session | design-intel |
 |---|---|---|
-| `design-intel critique` | Expert design critique from a screenshot, URL, or description | Available |
-| `design-intel critique --crawl` | Multi-page SPA crawl with cross-page analysis | Available |
-| `design-intel generate-style` | Generate a complete style guide from a brief | Planned |
-| `design-intel extract-style` | Reverse-engineer a style guide from a live site | Planned |
-| `design-intel write-spec` | Write a UX/UI spec from feature requirements | Planned |
-| `design-intel curate` | Discover and ingest new design knowledge | Planned |
+| Contrast ratios | Approximated, sometimes wrong | Deterministic, 100% accurate (code) |
+| Touch target measurements | Estimated ("~40px") | Exact ("36x36px, 13x13px") |
+| Token detection | Manual inspection | Automated 3-strategy extraction |
+| WCAG compliance | LLM interpretation | Programmatic checker, 11 criteria |
+| Run history | None (no memory) | Score trend, issue-level diff |
+| Hover/focus states | "Not tested" | Playwright-verified with before/after |
+| Multi-page analysis | Manual navigation | Automated SPA crawl |
+| Component scoring | Not available | Per-component pass/fail |
+| Keyboard navigation | "Test with real AT" | Automated tab order mapping |
+
+## Commands
+
+| Command | Description | LLM? |
+|---|---|---|
+| `design-intel critique --url X` | Standard single-agent critique | Yes |
+| `design-intel critique --url X --deep` | Multi-agent deep analysis (4 agents in parallel) | Yes (4x) |
+| `design-intel critique --url X --crawl` | Multi-page SPA crawl with cross-page analysis | Yes |
+| `design-intel critique --url X --stage wireframe` | Stage-adjusted critique depth | Yes |
+| `design-intel critique --url X --device iphone-14-pro` | Mobile viewport critique | Yes |
+| `design-intel wcag --url X` | Standalone WCAG 2.2 audit | No |
+| `design-intel test-interactions --url X` | Keyboard nav, forms, empty states, responsive | No |
+| `design-intel components --url X` | Component detection + per-component scoring | No |
+| `design-intel handoff --url X` | Developer handoff specification | Yes |
+| `design-intel history --url X` | View run history + score trend | No |
+| `design-intel index-knowledge` | Rebuild knowledge index | No |
 
 ## Quick start
 
@@ -36,11 +55,14 @@ cp .env.example .env
 
 # Build the knowledge index
 design-intel index-knowledge
+
+# Run your first critique
+design-intel critique --url "https://example.com" --save
 ```
 
 ## Usage
 
-### Critique a single page
+### Standard critique
 
 ```bash
 design-intel critique --url "https://example.com"
@@ -48,57 +70,172 @@ design-intel critique --image ./screenshot.png
 design-intel critique --describe "A login page with tiny grey placeholder text and no form labels"
 ```
 
-### Crawl an entire app (SPA-aware)
+### Deep analysis (4 agents in parallel)
+
+```bash
+design-intel critique --url "https://example.com" --deep --save
+```
+
+Runs four specialized agents simultaneously:
+- **Accessibility Agent** - ARIA semantics, component intent, screen reader experience
+- **Design System Agent** - Token architecture, root cause analysis, naming conventions
+- **Visual Design Agent** - Hierarchy, composition, rhythm, aesthetics
+- **Interaction Agent** - State audit, affordances, feedback patterns
+
+Plus deterministic analysis: WCAG checker, interaction tests, component scoring.
+
+### Multi-page SPA crawl
 
 ```bash
 design-intel critique --url "http://localhost:3000" --crawl --save
 design-intel critique --url "http://localhost:3000" --crawl --max-pages 15
 ```
 
-The `--crawl` flag discovers navigation elements, clicks through each page, and extracts DOM metrics from every view. Works with SPAs (React, Vue, etc.) that use client-side routing.
+Discovers navigation elements, clicks through each page (including SPA client-side routing), and extracts DOM metrics from every view. Screenshots from all pages are sent to the LLM.
+
+### Stage-aware critique
+
+```bash
+# Early wireframe - focus on IA and flow, skip visual polish
+design-intel critique --url "..." --stage wireframe
+
+# Mid-fidelity mockup - focus on visual system, light accessibility
+design-intel critique --url "..." --stage mockup
+
+# Production (default) - full critique with WCAG compliance
+design-intel critique --url "..." --stage production
+```
+
+### Mobile device testing
+
+```bash
+design-intel critique --url "..." --device iphone-14-pro --crawl
+design-intel critique --url "..." --device ipad
+design-intel critique --url "..." --viewport-width 375 --viewport-height 667
+```
+
+Device presets: `iphone-12`, `iphone-14-pro`, `iphone-15`, `iphone-se`, `pixel-7`, `ipad`, `ipad-pro`, `desktop`
+
+### Developer handoff
+
+```bash
+design-intel handoff --url "https://example.com" --save
+```
+
+Generates developer specs: design tokens, layout specification, component inventory with dimensions and states, interaction specs from Playwright testing, accessibility requirements, and edge cases.
+
+### Standalone tools (no LLM, instant)
+
+```bash
+# WCAG 2.2 audit - deterministic pass/fail, 11 criteria
+design-intel wcag --url "https://example.com" --crawl
+
+# Interaction tests - keyboard nav, forms, empty states, responsive
+design-intel test-interactions --url "https://example.com"
+
+# Component scoring - per-component pass/fail against pattern standards
+design-intel components --url "https://example.com"
+
+# Run history and score trend
+design-intel history --url "https://example.com"
+```
 
 ### Options
 
 ```bash
-# Set critique tone: opinionated (default), balanced, or gentle
-design-intel critique --url "..." --tone balanced
-
-# Add context about the design
-design-intel critique --image ./dashboard.png --context "B2B analytics dashboard for enterprise finance teams"
-
-# Save report to output/
-design-intel critique --url "https://example.com" --save
+--tone balanced          # opinionated (default), balanced, or gentle
+--context "B2B dashboard for finance teams"
+--save                   # save report to output/
+--crawl                  # multi-page SPA crawl
+--deep                   # multi-agent + interaction tests + component scores
+--stage wireframe        # wireframe, mockup, or production
+--device iphone-14-pro   # device viewport preset
+--max-pages 15           # max pages to crawl
 ```
 
-## How it works
+## Architecture
 
-The critique agent combines three data sources for every analysis:
+### Data pipeline
 
-### 1. Visual analysis (screenshot)
-The LLM analyses the screenshot for visual hierarchy, layout composition, and overall design quality.
+```
+URL/Screenshot/Description
+    |
+    v
+[Input Processor] -- Playwright screenshots, DOM extraction, SPA crawl
+    |
+    v
+[Deterministic Analysis] -- WCAG checker, interaction tests, component scoring (no LLM)
+    |
+    v
+[Knowledge Retrieval] -- Context-aware tag matching from 39-entry library
+    |
+    v
+[LLM Agents] -- Single agent or 4 specialized agents in parallel
+    |
+    v
+[Output] -- Markdown report + regression diff + history tracking
+```
 
-### 2. DOM extraction (automated)
-Playwright extracts exact computed values from the page:
-- **Colours** - every text and background colour with frequency counts
-- **Contrast ratios** - computed for all text/background pairs, checked against WCAG 2.2 AA
-- **Non-text contrast** - UI component boundaries checked against WCAG 1.4.11 (3:1)
-- **Font sizes** - all sizes in use, flagging arbitrary values outside a modular scale
-- **Spacing values** - padding, margin, and gap values to identify systematic vs arbitrary spacing
-- **Touch targets** - every interactive element measured against the 44x44px minimum
-- **Focus styles** - which elements have custom focus-visible styles and which rely on browser defaults
-- **CSS custom properties** - design tokens defined on `:root`, grouped by category
-- **HTML structure** - landmarks, headings, skip links, form labels, ARIA attributes
+### What the deterministic layer catches (no LLM)
 
-### 3. Knowledge library (37 entries, 10 domains)
-The critique is grounded in established design frameworks retrieved from the knowledge library. See [Knowledge Library](#knowledge-library) below.
+The programmatic WCAG checker evaluates 11 criteria with 100% accuracy:
+
+| Criterion | What it checks |
+|---|---|
+| 1.3.1 Info and Relationships | Landmarks (main, nav, header, footer) + heading hierarchy |
+| 1.4.1 Use of Color | Flagged for manual review |
+| 1.4.3 Contrast (Minimum) | All text/background pairs against 4.5:1 (AA) and 3:1 (large) |
+| 1.4.11 Non-text Contrast | UI component boundaries against 3:1 |
+| 2.4.1 Bypass Blocks | Skip link presence |
+| 2.4.7 Focus Visible | Stylesheet scanning for :focus-visible rules |
+| 2.5.5 Target Size (Enhanced) | 44x44px (AAA) |
+| 2.5.8 Target Size (Minimum) | 24x24px (AA) |
+| 3.1.1 Language of Page | lang attribute on html |
+| 4.1.2 Name, Role, Value | Form inputs with programmatic labels |
+
+Alpha-composited contrast calculation handles semi-transparent backgrounds correctly (e.g. `rgba(34, 197, 94, 0.19)` on a dark surface).
+
+### What the LLM adds (subjective judgment)
+
+The LLM evaluates what code cannot:
+- Visual hierarchy and composition quality
+- Typography rhythm and readability
+- Component intent vs semantics (is a checkbox being used where a toggle button would be correct?)
+- ARIA pattern correctness (does this custom widget follow WAI-ARIA APG?)
+- Screen reader experience narrative
+- Design system maturity assessment
+- Root cause analysis (which token maps to the failing contrast value?)
+
+### Regression tracking
+
+Every run is stored in `.design-intel/` with score, WCAG results, and issue inventory. Subsequent runs show:
+
+```
+Regression Report
+
+Previous run: 2026-04-04T17:30:30 | Score: 50/100 | WCAG: 30.0%
+Current run:  2026-04-04T19:53:20 | Score: 62/100 | WCAG: 40.0%
+
+Score: +12 points (improved)
+
+Fixed (3 issues resolved)
+- ~~4.1.2 Form Labels: 15 inputs without labels~~
+- ~~2.4.1 Bypass Blocks: No skip link~~
+- ~~3.1.1 Language: Missing lang attribute~~
+
+Persistent (3 unresolved)
+- 1.4.11 Non-text Contrast: 86 UI components below 3:1
+- 2.5.5 Target Size: 75 elements below 44x44px
+- 1.4.3 Contrast: 3 text pairs below 4.5:1
+```
 
 ## Evaluation frameworks
 
-Every critique is grounded in these established frameworks:
+Every critique is grounded in established frameworks:
 
 - **Nielsen's 10 Usability Heuristics** - findings reference specific heuristics by name
-- **Nielsen Severity Scale (0-4)** - every finding is rated: 0 (not a problem) to 4 (usability catastrophe)
-- **WCAG 2.2 AA** - specific success criteria cited by number (e.g. WCAG 2.5.8, WCAG 1.4.11)
+- **Nielsen Severity Scale (0-4)** - every finding rated: 0 (not a problem) to 4 (usability catastrophe)
+- **WCAG 2.2 AA** - specific success criteria cited by number
 - **Gestalt Principles** - proximity, similarity, figure-ground applied to layout and grouping
 - **Fitts's Law** - target size and distance analysis for interactive elements
 
@@ -136,9 +273,7 @@ LLM_MODEL=llama3.2-vision
 
 ## Knowledge library
 
-The critique agent is backed by a versioned, git-tracked knowledge library of design principles stored as structured markdown with YAML frontmatter. Each entry is sourced from authoritative references and tagged for retrieval.
-
-### 37 entries across 10 domains
+39 entries across 10 domains, sourced from authoritative references (WCAG, Nielsen, Apple HIG, Material Design, Carbon, etc.):
 
 ```
 knowledge/
@@ -149,118 +284,84 @@ knowledge/
   layout/           # Gestalt principles, F-pattern, spacing systems, whitespace
   interaction/      # Form design, microinteractions, navigation, IA, component states
   systems/          # Atomic design, design tokens, Material 3, Apple HIG, Carbon, Figma references
-  critique/         # Liz Lerman CRP, five modes of design review
+  critique/         # Liz Lerman CRP, design review modes, teardown sources
   motion/           # Animation principles, reduced motion, transition patterns
   mobile/           # Thumb zone, responsive design, platform conventions
 ```
 
-### Entry format
-
-Each knowledge entry follows this structure:
-
-```yaml
----
-id: acc-001
-title: "WCAG Contrast Ratio Requirements"
-category: accessibility
-tags: [contrast, wcag, colour, accessibility]
-source: "https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html"
-source_authority: canonical
-ingested: 2026-04-04
-validated: true
----
-
-[Markdown content: the principle, when to apply it, exceptions, examples]
-```
-
-### Source corpus
-
-The knowledge library is built from authoritative sources documented in `knowledge/CORPUS_SOURCES.md`. This file tracks all source references across the 10 domains, including free URLs, books, and academic papers, so contributors know where entries came from and what sources remain to be distilled.
+Context-aware retrieval selects relevant entries based on what's actually in the DOM (dark theme detected = dark mode guidelines loaded; forms detected = form design patterns loaded).
 
 ### Contributing knowledge entries
 
-1. Add a new `.md` file in the appropriate `knowledge/[category]/` directory
-2. Include YAML frontmatter with `id`, `title`, `category`, `tags`, `source`, and `source_authority`
+1. Add a `.md` file in `knowledge/[category]/` with YAML frontmatter
+2. Include `id`, `title`, `category`, `tags`, `source`, `source_authority`
 3. Write actionable content: the principle, when to apply it, common violations
-4. Run `design-intel index-knowledge` to rebuild the tag index
-5. Add the source to `knowledge/CORPUS_SOURCES.md` if it's a new reference
-
-### Rebuild the knowledge index
-
-```bash
-design-intel index-knowledge
-```
-
-## Critique categories
-
-Every critique evaluates across nine categories:
-
-- **Visual hierarchy** - Can users identify the primary action within 3 seconds?
-- **Typography** - Consistent type scale, readable line lengths (45-75 chars), appropriate fonts
-- **Colour and contrast** - WCAG 2.2 AA compliance, non-text contrast (1.4.11), dark mode best practices
-- **Spacing and rhythm** - Systematic spacing scale, Gestalt proximity grouping
-- **Layout and composition** - Grid consistency, visual flow, responsive readiness
-- **Accessibility (WCAG 2.2)** - Landmarks, headings, form labels, ARIA, touch targets, focus management, skip links
-- **Interaction patterns** - Component states (8 required states per element), affordances, platform conventions
-- **Consistency** - Design token usage, hardcoded vs tokenised values
-- **Information architecture** - Progressive disclosure, navigation patterns, content organisation
+4. Run `design-intel index-knowledge`
+5. Add the source to `knowledge/CORPUS_SOURCES.md`
 
 ## Project structure
 
 ```
 better-design-agent/
 ├── src/
-│   ├── cli.py                  # Typer CLI entry point
-│   ├── config.py               # Pydantic Settings
-│   ├── providers/llm.py        # LiteLLM wrapper (Claude, OpenAI, Ollama)
+│   ├── cli.py                       # Typer CLI (all commands)
+│   ├── config.py                    # Pydantic Settings
+│   ├── providers/llm.py             # LiteLLM wrapper (Claude, OpenAI, Ollama)
 │   ├── input/
-│   │   ├── processor.py        # Input normalisation (image, URL, text)
-│   │   ├── screenshot.py       # Playwright: screenshots, DOM extraction, SPA crawl
-│   │   └── models.py           # DesignInput, PageCapture dataclasses
+│   │   ├── processor.py             # Input normalisation
+│   │   ├── screenshot.py            # Playwright: screenshots, DOM extraction, SPA crawl,
+│   │   │                            #   state testing, image compression
+│   │   └── models.py                # DesignInput, PageCapture dataclasses
 │   ├── agents/
-│   │   ├── base.py             # Base agent with knowledge retrieval
-│   │   └── critique.py         # Critique agent with DOM formatting
+│   │   ├── base.py                  # Base agent with knowledge retrieval
+│   │   ├── critique.py              # Single-agent critique
+│   │   ├── orchestrator.py          # Multi-agent parallel orchestrator
+│   │   ├── accessibility_agent.py   # ARIA, semantics, screen reader, focus management
+│   │   ├── design_system_agent.py   # Tokens, root cause, naming, maturity
+│   │   ├── visual_agent.py          # Hierarchy, composition, rhythm, aesthetics
+│   │   ├── interaction_agent.py     # States, affordances, feedback
+│   │   └── handoff_agent.py         # Developer handoff specification
+│   ├── analysis/
+│   │   ├── wcag_checker.py          # Deterministic WCAG 2.2 checker (11 criteria)
+│   │   ├── interaction_tester.py    # Keyboard nav, form validation, empty states, responsive
+│   │   ├── component_detector.py    # Component detection + per-component scoring
+│   │   └── history.py               # Run history, regression tracking, score diff
 │   ├── knowledge/
-│   │   ├── store.py            # Read/write knowledge entries
-│   │   ├── index.py            # Tag-based index (INDEX.yaml)
-│   │   └── retriever.py        # Hybrid retrieval by tags/category
+│   │   ├── store.py                 # Read/write knowledge entries
+│   │   ├── index.py                 # Tag-based index
+│   │   └── retriever.py             # Context-aware retrieval
 │   └── output/
-│       └── formatter.py        # Report saving with timestamps
-├── knowledge/                  # Design knowledge corpus (git-tracked)
-│   ├── INDEX.yaml              # Auto-generated tag index
-│   ├── CORPUS_SOURCES.md       # Source reference document
-│   ├── accessibility/          # 7 entries
-│   ├── heuristics/             # 3 entries
-│   ├── interaction/            # 5 entries
-│   ├── layout/                 # 4 entries
-│   ├── systems/                # 6 entries
-│   ├── colour/                 # 3 entries
-│   ├── typography/             # 2 entries
-│   ├── critique/               # 2 entries
-│   ├── motion/                 # 2 entries
-│   ├── mobile/                 # 3 entries
-│   └── pending/                # Entries awaiting review
+│       └── formatter.py             # Report saving
+├── knowledge/                       # Design knowledge corpus (39 entries, git-tracked)
+│   ├── INDEX.yaml                   # Auto-generated tag index (100 tags)
+│   └── CORPUS_SOURCES.md            # Source reference document
 ├── tests/
-│   └── benchmark_critique.py   # Output quality benchmark
-├── config/default.yaml         # Default configuration
-└── output/                     # Generated reports (gitignored)
+│   └── benchmark_critique.py        # Output quality benchmark (7 dimensions)
+├── config/default.yaml
+└── output/                          # Generated reports (gitignored)
 ```
 
 ## Benchmarking
 
-The `tests/benchmark_critique.py` script scores critique outputs across seven dimensions:
+Benchmarked against raw Claude Opus 4.6 and Sonnet 4.6 sessions on excalidraw.com:
+
+| Agent | Score | Specificity | Coverage | Accessibility | Design System | Unique Findings |
+|---|---|---|---|---|---|---|
+| **design-intel (deep)** | **86%** | 100% | 100% | 100% | 100% | 100% |
+| Sonnet 4.6 (raw) | 85% | 100% | 100% | 100% | 100% | 100% |
+| Opus 4.6 (raw) | 71% | 75% | 100% | 100% | 50% | 80% |
+
+The benchmark measures seven dimensions:
 
 | Dimension | What it measures |
 |---|---|
 | Specificity | Hex colours, pixel values, contrast ratios, CSS selectors cited |
 | Coverage | Design categories evaluated (9 possible) |
 | Actionability | Findings with concrete fixes including specific values |
-| Accessibility Depth | WCAG criteria referenced, semantic HTML analysis, focus audit |
+| Accessibility Depth | WCAG criteria referenced, semantic HTML analysis |
 | Design System Awareness | Existing token references, proposed token systems |
 | Scope | Pages covered, empty/loading/responsive state analysis |
 | Unique Findings | Issues found that other tools missed |
-
-Run against the benchmark outputs:
 
 ```bash
 python -m tests.benchmark_critique
@@ -268,16 +369,18 @@ python -m tests.benchmark_critique
 
 ## Roadmap
 
-- [x] **Phase 1** - Critique Agent + knowledge library (37 entries, 10 domains)
-- [x] **Phase 1.5** - DOM extraction, HTML audit, multi-page SPA crawl, benchmarking
-- [ ] **Phase 2** - Style Guide Generator + Extractor, vector search (ChromaDB)
-- [ ] **Phase 3** - Design Spec Writer, Figma input support
-- [ ] **Phase 4** - Autonomous knowledge curation and validation
-- [ ] **Phase 5** - API server mode (FastAPI), plugin system
+- [x] **Phase 1** - Critique Agent + knowledge library (39 entries, 10 domains)
+- [x] **Phase 1.5** - DOM extraction, HTML audit, multi-page SPA crawl
+- [x] **Batch 1** - Deterministic WCAG 2.2 checker (11 criteria, no LLM)
+- [x] **Batch 2** - Regression tracking with run history and issue-level diff
+- [x] **Batch 3** - Multi-agent architecture (4 specialized agents in parallel)
+- [x] **Batch 4** - Real interaction testing (keyboard, forms, empty states, responsive)
+- [x] **Batch 5** - Component-level detection and scoring
+- [x] **Extra** - Stage-aware critique, device presets, developer handoff, image compression
+- [ ] **Next** - Style Guide Generator + Extractor, vector search (ChromaDB)
+- [ ] **Future** - Figma input support, autonomous knowledge curation, API server mode
 
 ## Configuration
-
-All options can be set via `.env`, environment variables, or `config/default.yaml`:
 
 | Variable | Default | Description |
 |---|---|---|
