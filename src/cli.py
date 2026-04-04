@@ -55,7 +55,29 @@ def critique(
     save: bool = typer.Option(False, "--save", "-s", help="Save report to output/"),
 ):
     """Run a design critique on a screenshot, URL, or description."""
-    # Resolve viewport from device preset or custom values
+
+    STAGE_CONTEXT = {
+        "wireframe": (
+            "This is an early-stage WIREFRAME. Focus on information architecture, "
+            "content hierarchy, user flow, and layout structure. Do NOT critique "
+            "visual polish, colour choices, typography details, or pixel-level spacing. "
+            "Flag structural issues: missing content, unclear navigation, wrong IA."
+        ),
+        "mockup": (
+            "This is a MID-FIDELITY MOCKUP. Focus on visual hierarchy, typography "
+            "scale, colour system, spacing rhythm, and component consistency. Flag "
+            "interaction patterns that need definition. Light touch on accessibility "
+            "- note obvious issues but don't deep-audit WCAG compliance yet."
+        ),
+        "production": "",
+    }
+
+    # Determine if we should run dual viewport (desktop + mobile)
+    explicit_device = device or viewport_width or viewport_height
+    is_url_input = url is not None
+    run_dual = is_url_input and not explicit_device and not image and not describe
+
+    # Resolve viewport
     vw, vh = 1440, 900
     device_label = None
     if device:
@@ -71,53 +93,76 @@ def critique(
     if viewport_height:
         vh = viewport_height
 
-    # Add device and stage context
-    extra_context_parts = []
+    def _build_context(device_label_str=None, viewport_dims=None):
+        parts = []
+        if device_label_str and viewport_dims:
+            parts.append(f"This is a mobile view ({device_label_str}, {viewport_dims[0]}x{viewport_dims[1]}px). Evaluate against mobile design patterns: thumb zone placement, bottom navigation, touch targets (44pt iOS / 48dp Android), and responsive layout behaviour.")
+        stage_ctx = STAGE_CONTEXT.get(stage, "")
+        if stage_ctx:
+            parts.append(stage_ctx)
+        return "\n".join(filter(None, [context or ""] + parts)).strip()
 
-    if device_label:
-        extra_context_parts.append(f"This is a mobile view ({device_label}, {vw}x{vh}px). Evaluate against mobile design patterns: thumb zone placement, bottom navigation, touch targets (44pt iOS / 48dp Android), and responsive layout behaviour.")
-
-    STAGE_CONTEXT = {
-        "wireframe": (
-            "This is an early-stage WIREFRAME. Focus on information architecture, "
-            "content hierarchy, user flow, and layout structure. Do NOT critique "
-            "visual polish, colour choices, typography details, or pixel-level spacing. "
-            "Flag structural issues: missing content, unclear navigation, wrong IA."
-        ),
-        "mockup": (
-            "This is a MID-FIDELITY MOCKUP. Focus on visual hierarchy, typography "
-            "scale, colour system, spacing rhythm, and component consistency. Flag "
-            "interaction patterns that need definition. Light touch on accessibility "
-            "- note obvious issues but don't deep-audit WCAG compliance yet."
-        ),
-        "production": "",  # Full critique - no stage modifier needed
-    }
-    stage_context = STAGE_CONTEXT.get(stage, "")
-    if stage_context:
-        extra_context_parts.append(stage_context)
+    if stage != "production":
         console.print(f"Stage: {stage} (adjusting critique depth)")
 
-    combined_context = "\n".join(filter(None, [context or ""] + extra_context_parts)).strip()
+    def _run_single_viewport(vw_, vh_, device_label_, device_name_):
+        """Run a complete critique for one viewport."""
+        ctx = _build_context(device_label_, (vw_, vh_) if device_label_ else None)
 
-    status_msg = "Crawling app..." if crawl else "Processing input..."
-    with console.status(status_msg):
-        design_input = process_input(
-            image=image, url=url, describe=describe,
-            crawl=crawl, max_pages=max_pages,
-            viewport_width=vw, viewport_height=vh,
-        )
+        status_msg = "Crawling app..." if crawl else "Processing input..."
+        with console.status(f"[{device_name_}] {status_msg}"):
+            di = process_input(
+                image=image, url=url, describe=describe,
+                crawl=crawl, max_pages=max_pages,
+                viewport_width=vw_, viewport_height=vh_,
+            )
 
-    if crawl and design_input.pages:
-        console.print(f"Captured {len(design_input.pages)} pages:")
-        for p in design_input.pages:
-            console.print(f"  - {p.label} ({p.url})")
+        if crawl and di.pages:
+            console.print(f"[{device_name_}] Captured {len(di.pages)} pages")
 
-    # Run WCAG checker for history tracking
-    with console.status("Running WCAG checks..."):
-        if design_input.pages and len(design_input.pages) > 1:
-            wcag_report = run_wcag_check_multi(design_input.pages)
-        else:
-            wcag_report = run_wcag_check(design_input.dom_data)
+        with console.status(f"[{device_name_}] Running WCAG checks..."):
+            if di.pages and len(di.pages) > 1:
+                wcag = run_wcag_check_multi(di.pages)
+            else:
+                wcag = run_wcag_check(di.dom_data)
+
+        return di, wcag, ctx
+
+    if run_dual:
+        console.print("Running dual viewport analysis: Desktop (1440x900) + Mobile (393x852)")
+
+        # Desktop
+        di_desktop, wcag_desktop, ctx_desktop = _run_single_viewport(1440, 900, None, "Desktop")
+        # Mobile
+        di_mobile, wcag_mobile, ctx_mobile = _run_single_viewport(393, 852, "iPhone 14 Pro", "Mobile")
+
+        # Use desktop as primary input, append mobile findings
+        design_input = di_desktop
+        wcag_report = wcag_desktop
+
+        # Run the critique on desktop
+        combined_context = ctx_desktop
+    else:
+        combined_context = _build_context(device_label, (vw, vh) if device_label else None)
+
+        status_msg = "Crawling app..." if crawl else "Processing input..."
+        with console.status(status_msg):
+            design_input = process_input(
+                image=image, url=url, describe=describe,
+                crawl=crawl, max_pages=max_pages,
+                viewport_width=vw, viewport_height=vh,
+            )
+
+        if crawl and design_input.pages:
+            console.print(f"Captured {len(design_input.pages)} pages:")
+            for p in design_input.pages:
+                console.print(f"  - {p.label} ({p.url})")
+
+        with console.status("Running WCAG checks..."):
+            if design_input.pages and len(design_input.pages) > 1:
+                wcag_report = run_wcag_check_multi(design_input.pages)
+            else:
+                wcag_report = run_wcag_check(design_input.dom_data)
 
     if ensemble:
         # Ensemble mode: run multiple models in parallel, then synthesise
@@ -170,6 +215,40 @@ def critique(
             agent = CritiqueAgent(tone=tone)
             result = agent.run(design_input, context=combined_context)
 
+    # Append mobile analysis if running dual viewport
+    if run_dual:
+        mobile_ctx = _build_context("iPhone 14 Pro", (393, 852))
+
+        if deep:
+            with console.status("[Mobile] Running multi-agent deep analysis..."):
+                mobile_result = run_multi_agent_critique(di_mobile, context=mobile_ctx)
+        elif ensemble:
+            models = ensemble_models.split(",") if ensemble_models else get_ensemble_models()
+            models = [m.strip() for m in models if m.strip()]
+            with console.status(f"[Mobile] Running {len(models)} models in parallel..."):
+                runner = EnsembleRunner(models=models, tone=tone)
+                mobile_result = runner.run(di_mobile, context=mobile_ctx)
+        else:
+            with console.status("[Mobile] Generating mobile critique..."):
+                agent = CritiqueAgent(tone=tone)
+                mobile_result = agent.run(di_mobile, context=mobile_ctx)
+
+        # Combine desktop + mobile WCAG
+        mobile_wcag_md = wcag_mobile.to_markdown().replace(
+            "## WCAG 2.2 Automated Audit",
+            "## WCAG 2.2 Automated Audit (Mobile - iPhone 14 Pro, 393x852)"
+        )
+
+        result = (
+            "# Desktop Analysis (1440x900)\n\n"
+            + result
+            + "\n\n---\n\n"
+            + "# Mobile Analysis (iPhone 14 Pro, 393x852)\n\n"
+            + mobile_wcag_md
+            + "\n\n"
+            + mobile_result
+        )
+
     # Extract score from critique output (handles **bold** markdown)
     score = 0
     score_match = re.search(r"(\d+)\s*/\s*100", result)
@@ -204,19 +283,33 @@ def critique(
         from src.output.html_report import save_html_report
         image_paths = []
         page_labels = []
+
+        # Desktop screenshots
         if design_input.pages:
             for p in design_input.pages:
                 if p.image_path:
                     image_paths.append(p.image_path)
-                    page_labels.append(p.label)
+                    page_labels.append(f"Desktop: {p.label}")
         elif design_input.image_path:
             image_paths.append(design_input.image_path)
-            page_labels.append("Main")
+            page_labels.append("Desktop: Main")
 
+        # Mobile screenshots (if dual viewport)
+        if run_dual and di_mobile:
+            if di_mobile.pages:
+                for p in di_mobile.pages:
+                    if p.image_path:
+                        image_paths.append(p.image_path)
+                        page_labels.append(f"Mobile: {p.label}")
+            elif di_mobile.image_path:
+                image_paths.append(di_mobile.image_path)
+                page_labels.append("Mobile: Main")
+
+        device_str = "Desktop + Mobile" if run_dual else (device or "desktop")
         html_path = save_html_report(
             md_content=result,
             url=url or "",
-            device=device or "desktop",
+            device=device_str,
             image_paths=image_paths,
             page_labels=page_labels,
         )
