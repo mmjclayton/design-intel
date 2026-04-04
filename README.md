@@ -22,8 +22,9 @@ Outperforms raw Claude Opus and Sonnet sessions on structured design critique be
 
 | Command | Description | LLM? |
 |---|---|---|
-| `design-intel critique --url X` | Standard single-agent critique | Yes |
-| `design-intel critique --url X --deep` | Multi-agent deep analysis (4 agents in parallel) | Yes (4x) |
+| `design-intel critique --url X` | Standard single-agent critique | Yes (1 model) |
+| `design-intel critique --url X --deep` | Multi-agent deep analysis (4 agents in parallel) | Yes (4 calls) |
+| `design-intel critique --url X --ensemble` | Multi-model ensemble with consensus synthesis | Yes (N models + 1) |
 | `design-intel critique --url X --crawl` | Multi-page SPA crawl with cross-page analysis | Yes |
 | `design-intel critique --url X --stage wireframe` | Stage-adjusted critique depth | Yes |
 | `design-intel critique --url X --device iphone-14-pro` | Mobile viewport critique | Yes |
@@ -100,6 +101,12 @@ Run: design-intel handoff --url "https://example.com" --save
 Open the saved file for me.
 ```
 
+**Multi-model ensemble (uses all configured models):**
+```
+Run: design-intel critique --url "https://example.com" --ensemble --save
+Open the saved file for me.
+```
+
 **Check what improved since last run:**
 ```
 Run: design-intel history --url "https://example.com"
@@ -156,6 +163,46 @@ Runs four specialized agents simultaneously:
 - **Interaction Agent** - State audit, affordances, feedback patterns
 
 Plus deterministic analysis: WCAG checker, interaction tests, component scoring.
+
+### Ensemble mode (multiple models)
+
+```bash
+# Use models configured in .env (ENSEMBLE_MODELS)
+design-intel critique --url "https://example.com" --ensemble --save
+
+# Override with specific models
+design-intel critique --url "https://example.com" --ensemble \
+  --models "anthropic/claude-sonnet-4-20250514,openai/gpt-4o-mini,ollama/llama3.2-vision"
+```
+
+Runs the same critique across multiple LLM models in parallel, then a synthesis agent merges the findings into a consensus report:
+
+- **Consensus findings** - all models agree (highest confidence)
+- **Majority findings** - most models agree
+- **Unique insights** - only one model caught (flagged for review)
+- **Disputed findings** - models disagree (both positions shown)
+- **Priority fixes** - ranked by consensus level (unanimous first)
+
+Different models catch different things. Claude is strong on ARIA semantics, GPT-4o on visual composition, and local models provide a cost-free baseline. The synthesis agent reconciles all perspectives.
+
+**Supported models (set API keys in .env):**
+
+| Provider | Models | Cost | Vision? |
+|---|---|---|---|
+| Anthropic | claude-sonnet-4-20250514, claude-opus-4-20250514 | Paid | Yes |
+| OpenAI | gpt-4o, gpt-4o-mini | Paid | Yes |
+| Google | gemini-2.5-pro, gemini-2.5-flash | Paid (flash has free tier) | Yes |
+| Groq | llama-3.3-70b-versatile, llama-3.2-90b-vision-preview | Free tier | Partial |
+| DeepSeek | deepseek-chat | Very low cost | No |
+| Mistral | mistral-large-latest, mistral-small-latest | Paid | No |
+| Together AI | meta-llama/Llama-3.3-70B-Instruct-Turbo | Low cost | No |
+| OpenRouter | 100+ models | Varies (some free) | Varies |
+| Ollama | llama3.2-vision, gemma3, any local model | Free (local) | Yes |
+
+**Recommended ensemble for best coverage vs cost:**
+```env
+ENSEMBLE_MODELS=anthropic/claude-sonnet-4-20250514,openai/gpt-4o-mini,groq/llama-3.3-70b-versatile
+```
 
 ### Multi-page SPA crawl
 
