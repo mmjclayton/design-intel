@@ -595,9 +595,37 @@ async def _test_interactive_states(page) -> list[dict]:
     return results
 
 
+def _compress_screenshot(path: str, max_bytes: int = 4_500_000) -> None:
+    """Compress a screenshot if it exceeds the max size (default 4.5MB for API limits)."""
+    from PIL import Image
+    file_size = Path(path).stat().st_size
+    if file_size <= max_bytes:
+        return
+
+    img = Image.open(path)
+    # Resize to reduce file size — scale down proportionally
+    scale = (max_bytes / file_size) ** 0.5
+    new_width = int(img.width * scale)
+    new_height = int(img.height * scale)
+    img = img.resize((new_width, new_height), Image.LANCZOS)
+
+    # Save as JPEG with quality reduction if still too large
+    if path.endswith(".png"):
+        img.save(path, optimize=True)
+        if Path(path).stat().st_size > max_bytes:
+            jpg_path = path.replace(".png", ".jpg")
+            img.save(jpg_path, "JPEG", quality=80)
+            Path(path).unlink()
+            Path(jpg_path).rename(path)
+    else:
+        img.save(path, "JPEG", quality=80)
+
+
 async def _capture_page(page, output_path: str) -> tuple[str, dict]:
     """Capture screenshot and extract DOM data from a single page."""
-    await page.screenshot(path=output_path, full_page=True)
+    # Use viewport-only screenshot to avoid massive full-page captures
+    await page.screenshot(path=output_path, full_page=False)
+    _compress_screenshot(output_path)
     text = await page.inner_text("body")
     try:
         dom_data = await page.evaluate(DOM_EXTRACTION_SCRIPT)
