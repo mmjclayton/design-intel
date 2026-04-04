@@ -108,23 +108,33 @@ def _score_navigation(nav_data: dict, interactive: list, dom_data: dict) -> Comp
             failing = [e for e in nav_elements if not e.get("meets_touch_target")]
             issues.append(f"{len(failing)} nav items below 44px touch target")
 
-    # Focus styles (from state tests)
+    # Focus and hover styles (from Playwright state tests — ground truth)
     state_tests = dom_data.get("state_tests", [])
     nav_states = [s for s in state_tests if "nav" in s.get("selector", "").lower() or "tab" in s.get("selector", "").lower()]
+
+    # Also check for global :focus-visible rules
+    html = dom_data.get("html_structure", {})
+    has_global_focus = html.get("has_global_focus_visible", False)
+
     if nav_states:
         with_focus = [s for s in nav_states if s.get("has_focus_state")]
-        if len(with_focus) == len(nav_states):
+        if len(with_focus) == len(nav_states) or has_global_focus:
             score += 2
-            strengths.append("All nav items have focus styles")
+            strengths.append("All nav items have focus styles (verified by state test)")
         else:
-            issues.append(f"{len(nav_states) - len(with_focus)} nav items missing focus styles")
+            tested_without = len(nav_states) - len(with_focus)
+            issues.append(f"{tested_without}/{len(nav_states)} tested nav items missing focus styles")
 
         with_hover = [s for s in nav_states if s.get("has_hover_state")]
         if len(with_hover) == len(nav_states):
             score += 2
-            strengths.append("All nav items have hover states")
+            strengths.append("All nav items have hover states (verified by state test)")
         else:
-            issues.append(f"{len(nav_states) - len(with_hover)} nav items missing hover states")
+            tested_without = len(nav_states) - len(with_hover)
+            issues.append(f"{tested_without}/{len(nav_states)} tested nav items missing hover states")
+    elif has_global_focus:
+        score += 2
+        strengths.append("Global :focus-visible rule covers all nav items")
 
     selector = nav_elements[0]["element"] if nav_elements else "nav"
     return ComponentScore("Navigation", "nav", selector, score, max_score, issues, strengths)

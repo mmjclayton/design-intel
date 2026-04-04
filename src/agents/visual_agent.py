@@ -57,6 +57,9 @@ What works well visually and why.
 - Reference specific areas of the screenshot (top-left, centre, bottom-right).
 - Be opinionated. "This works" or "this doesn't" — not "this could be considered".
 - Do NOT suggest new features. Only evaluate what exists.
+- **CRITICAL: When mentioning colours, use the exact hex values from the DOM data provided \
+(e.g. #0f1117, #e1e4ed), NOT approximate descriptions like "pure black" or "pure white". \
+The DOM data is authoritative.**
 """
 
 
@@ -85,11 +88,19 @@ class VisualDesignAgent(BaseAgent):
         if context:
             parts.append(f"## Context\n{context}")
 
-        # Minimal layout info
+        # Layout and colour facts from DOM (authoritative — use these, don't guess)
         layout = design_input.dom_data.get("layout", {})
         if layout:
-            parts.append(f"Viewport: {layout.get('viewport_width', '?')}x{layout.get('viewport_height', '?')}px")
-            parts.append(f"Base font: {layout.get('body_font_size', '?')}")
+            parts.append("## DOM Facts (use these exact values, do not approximate)")
+            parts.append(f"- Viewport: {layout.get('viewport_width', '?')}x{layout.get('viewport_height', '?')}px")
+            parts.append(f"- Base font: {layout.get('body_font_size', '?')}")
+            parts.append(f"- Body background: `{layout.get('body_bg', '?')}`")
+
+        colors = design_input.dom_data.get("colors", {})
+        if colors.get("text"):
+            parts.append("- Text colours: " + ", ".join(f"`{c['color']}`" for c in colors["text"][:5]))
+        if colors.get("background"):
+            parts.append("- Background colours: " + ", ".join(f"`{c['color']}`" for c in colors["background"][:5]))
 
         if design_input.pages and len(design_input.pages) > 1:
             labels = [p.label for p in design_input.pages if p.image_path]

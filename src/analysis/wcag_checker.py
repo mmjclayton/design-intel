@@ -40,7 +40,8 @@ class WcagReport:
 
     @property
     def score_percentage(self) -> float:
-        testable = [r for r in self.results if r.status != "na"]
+        """Score based on A/AA criteria only (AAA is aspirational)."""
+        testable = [r for r in self.results if r.status != "na" and r.level in ("A", "AA")]
         if not testable:
             return 0.0
         passed = sum(1 for r in testable if r.status == "pass")
@@ -76,21 +77,39 @@ class WcagReport:
             f"{self.warning_count} warning, {self.total_violations} total violations)\n",
         ]
 
-        # Failures first
+        # Failures — separated by level
         failures = [r for r in self.results if r.status == "fail"]
-        if failures:
-            lines.append("### Failures\n")
+        aa_failures = [r for r in failures if r.level in ("A", "AA")]
+        aaa_failures = [r for r in failures if r.level == "AAA"]
+
+        if aa_failures:
+            lines.append("### Failures (A/AA - must fix for compliance)\n")
             lines.append("| Criterion | Level | Violations | Details |")
             lines.append("|-----------|-------|------------|---------|")
-            for r in failures:
+            for r in aa_failures:
                 lines.append(f"| {r.criterion} | {r.level} | {r.count} | {r.details} |")
 
-            # Violation details
-            for r in failures:
+            for r in aa_failures:
                 if r.violations:
-                    lines.append(f"\n**{r.criterion}** violations:")
-                    for v in r.violations[:10]:
+                    # Deduplicate violations by element
+                    seen = set()
+                    unique = []
+                    for v in r.violations:
+                        key = v.get("element", "") + "|" + v.get("issue", v.get("size", ""))
+                        if key not in seen:
+                            seen.add(key)
+                            unique.append(v)
+                    lines.append(f"\n**{r.criterion}** violations ({len(unique)} unique elements):")
+                    for v in unique[:10]:
                         lines.append(f"- {_format_violation(v)}")
+            lines.append("")
+
+        if aaa_failures:
+            lines.append("### AAA Aspirational (nice to have, not required for compliance)\n")
+            lines.append("| Criterion | Level | Violations | Details |")
+            lines.append("|-----------|-------|------------|---------|")
+            for r in aaa_failures:
+                lines.append(f"| {r.criterion} | {r.level} | {r.count} | {r.details} |")
             lines.append("")
 
         # Warnings
@@ -190,6 +209,16 @@ def check_non_text_contrast(dom_data: dict) -> WcagResult:
     )
 
 
+def _is_offscreen_element(element: dict) -> bool:
+    """Check if an element is likely off-screen (skip links, hidden elements)."""
+    el_name = element.get("element", "").lower()
+    text = element.get("text", "").lower()
+    # Skip links are intentionally off-screen and only visible on focus
+    if "skip" in el_name or "skip" in text:
+        return True
+    return False
+
+
 def check_target_size(dom_data: dict) -> WcagResult:
     """WCAG 2.5.8 Target Size (Minimum) - AA - 24x24px minimum."""
     interactive = dom_data.get("interactive_elements", [])
@@ -199,6 +228,9 @@ def check_target_size(dom_data: dict) -> WcagResult:
     violations_24 = []
     warnings_44 = []
     for e in interactive:
+        # Skip off-screen elements (skip links are visible only on focus)
+        if _is_offscreen_element(e):
+            continue
         w, h = e.get("width", 0), e.get("height", 0)
         if w < 24 or h < 24:
             violations_24.append({
@@ -246,7 +278,7 @@ def check_target_size_enhanced(dom_data: dict) -> WcagResult:
             "size": f"{e.get('width', 0)}x{e.get('height', 0)}px",
         }
         for e in interactive
-        if not e.get("meets_touch_target")
+        if not e.get("meets_touch_target") and not _is_offscreen_element(e)
     ]
 
     if violations:
@@ -522,8 +554,23 @@ def run_wcag_check_multi(pages: list) -> WcagReport:
                 if status_priority.get(result.status, 0) > status_priority.get(existing.status, 0):
                     existing.status = result.status
                     existing.details = result.details
-                existing.count += result.count
                 existing.violations.extend([{**v, "page": label} for v in result.violations])
+
+    # Deduplicate violations and recount
+    for result in criterion_map.values():
+        seen = set()
+        unique = []
+        for v in result.violations:
+            # Deduplicate by element + issue (ignore page)
+            key = (v.get("element", ""), v.get("issue", v.get("size", "")))
+            if key not in seen:
+                seen.add(key)
+                unique.append(v)
+        result.violations = unique
+        result.count = len(unique)
+        # Update details with correct count
+        if result.count > 0 and result.status == "fail":
+            result.details = f"{result.count} unique violations across pages"
 
     aggregated.results = list(criterion_map.values())
     return aggregated

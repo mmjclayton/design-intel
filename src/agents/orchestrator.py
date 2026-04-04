@@ -1,6 +1,6 @@
 """
-Multi-agent orchestrator — runs specialized sub-agents in parallel
-and merges their outputs into a unified critique report.
+Multi-agent orchestrator — runs specialized sub-agents in parallel,
+reconciles contradictions, and merges into a unified report.
 """
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -11,10 +11,34 @@ from src.agents.visual_agent import VisualDesignAgent
 from src.agents.interaction_agent import InteractionAgent
 from src.analysis.wcag_checker import run_wcag_check, run_wcag_check_multi
 from src.input.models import DesignInput
+from src.providers.llm import call_llm
+
+
+RECONCILIATION_PROMPT = """\
+You are a technical editor reviewing a design critique report produced by \
+four independent sub-agents. Your ONLY job is to find and fix contradictions \
+between sections. Do NOT add new findings or change the substance.
+
+Fix these specific problems:
+1. If one section says "no active state" but another confirms active states \
+exist with specific CSS changes, remove the false claim.
+2. If one section says "no focus styles" but another documents focus styles \
+working, remove the false claim.
+3. If counts are impossible (e.g. "13/10 inputs missing labels"), fix the \
+denominator to match the actual count.
+4. If colours are described as "pure black #000000" or "pure white #FFFFFF" \
+but the DOM data shows different values (#0f1117, #e1e4ed), use the DOM values.
+5. If the same element appears multiple times as separate violations, \
+deduplicate to count unique elements only.
+
+Output the complete corrected report. Preserve all formatting, sections, and \
+findings that are NOT contradictory. Only change what is factually inconsistent \
+between sections.
+"""
 
 
 def run_multi_agent_critique(design_input: DesignInput, context: str = "") -> str:
-    """Run all four specialized agents in parallel and merge results."""
+    """Run all four specialized agents in parallel, reconcile, and merge."""
 
     agents = {
         "accessibility": AccessibilityAgent(),
@@ -44,8 +68,13 @@ def run_multi_agent_critique(design_input: DesignInput, context: str = "") -> st
             name, output = future.result()
             results[name] = output
 
-    # Merge into unified report
-    return _merge_reports(wcag_report, results)
+    # Merge into draft report
+    draft = _merge_reports(wcag_report, results)
+
+    # Reconciliation pass — fix contradictions between sub-agents
+    reconciled = _reconcile(draft)
+
+    return reconciled
 
 
 def _merge_reports(wcag_report, agent_results: dict) -> str:
@@ -57,8 +86,7 @@ def _merge_reports(wcag_report, agent_results: dict) -> str:
     sections.append("# Design Critique Report (Multi-Agent Analysis)\n")
     sections.append(
         "This report was produced by four specialized agents analysing the design "
-        "in parallel, plus a deterministic WCAG 2.2 checker. Each section represents "
-        "a different analytical lens.\n"
+        "in parallel, plus a deterministic WCAG 2.2 checker.\n"
     )
 
     # WCAG Checker (deterministic)
@@ -90,3 +118,16 @@ def _merge_reports(wcag_report, agent_results: dict) -> str:
         sections.append(agent_results["interaction"])
 
     return "\n".join(sections)
+
+
+def _reconcile(draft: str) -> str:
+    """Run a reconciliation pass to fix contradictions between sub-agents."""
+    try:
+        return call_llm(
+            system_prompt=RECONCILIATION_PROMPT,
+            user_prompt=draft,
+            max_tokens=8000,
+        )
+    except Exception:
+        # If reconciliation fails, return the draft as-is
+        return draft
