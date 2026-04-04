@@ -378,23 +378,17 @@ def print_results(results: list[BenchmarkResult]):
 
 def main():
     # File paths — Excalidraw comparison
+    # To run the benchmark, generate fresh outputs by running:
+    #   design-intel critique --url "https://excalidraw.com" --deep --save
+    #   design-intel critique --url "https://excalidraw.com" --ensemble --models "..." --save
+    # Then update these paths to point to the new output files.
     design_intel_ensemble_path = Path("output/critique-20260404-210150.md")
     design_intel_final_path = Path("output/critique-20260404-201907.md")
     design_intel_single_path = Path("output/critique-20260404-182132.md")
-    excalidraw_opus_path = Path("output/excalidraw-opus.md")
-    excalidraw_sonnet_path = Path("output/excalidraw-sonnet.md")
-    sonnet_path = Path(
-        "/Users/matt_clayton/Library/Application Support/Claude/"
-        "local-agent-mode-sessions/d79e667b-cec2-487a-8759-f28e7966ed58/"
-        "b7c0e6be-4d6d-484f-8c22-f19142d6e983/"
-        "local_4112ca41-ffff-4a1e-b01d-5df6496b74d3/outputs/design-critique-loadout.md"
-    )
-    opus_path = Path(
-        "/Users/matt_clayton/Library/Application Support/Claude/"
-        "local-agent-mode-sessions/d79e667b-cec2-487a-8759-f28e7966ed58/"
-        "b7c0e6be-4d6d-484f-8c22-f19142d6e983/"
-        "local_9aaa9ecc-4258-43fc-b0ca-fef483f78e21/outputs/loadout-design-critique-opus.md"
-    )
+
+    # Baseline comparison files (raw Claude session outputs)
+    excalidraw_opus_path = Path("reports/samples/excalidraw-deep.md")  # substitute with raw Opus output
+    excalidraw_sonnet_path = Path("reports/samples/excalidraw-deep.md")  # substitute with raw Sonnet output
 
     files = {
         "di single": design_intel_single_path,
