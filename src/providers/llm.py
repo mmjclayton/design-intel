@@ -11,10 +11,24 @@ PROVIDER_PREFIX = {
     "claude": "anthropic/",
     "openai": "",
     "ollama": "ollama/",
+    "google": "gemini/",
+    "mistral": "mistral/",
+    "groq": "groq/",
+    "deepseek": "deepseek/",
+    "together": "together_ai/",
+    "openrouter": "openrouter/",
 }
 
 
-def _resolve_model() -> str:
+def _resolve_model(model_override: str | None = None) -> str:
+    if model_override:
+        # If it already has a prefix (contains /), use as-is
+        if "/" in model_override:
+            return model_override
+        # Otherwise apply the default provider prefix
+        prefix = PROVIDER_PREFIX.get(settings.llm_provider, "")
+        return f"{prefix}{model_override}"
+
     prefix = PROVIDER_PREFIX.get(settings.llm_provider, "")
     model = settings.llm_model
     if model.startswith(prefix):
@@ -42,8 +56,10 @@ def call_llm(
     image_paths: list[str] | None = None,
     max_tokens: int | None = None,
     temperature: float | None = None,
+    model: str | None = None,
 ) -> str:
-    model = _resolve_model()
+    """Call an LLM. Optional model override for ensemble mode."""
+    resolved_model = _resolve_model(model)
     messages = [{"role": "system", "content": system_prompt}]
 
     # Collect all images
@@ -53,8 +69,17 @@ def call_llm(
     if image_paths:
         all_images.extend(image_paths)
 
+    # Check if model supports vision (some don't)
+    model_lower = resolved_model.lower()
+    supports_vision = not any(
+        nv in model_lower for nv in [
+            "llama-3.3", "mistral-small", "mistral-large",
+            "deepseek-chat", "llama-3.1",
+        ]
+    )
+
     user_content: list[dict] | str
-    if all_images:
+    if all_images and supports_vision:
         user_content = [{"type": "text", "text": user_prompt}]
         for img in all_images:
             if Path(img).exists():
@@ -65,10 +90,21 @@ def call_llm(
     messages.append({"role": "user", "content": user_content})
 
     response = litellm.completion(
-        model=model,
+        model=resolved_model,
         messages=messages,
         max_tokens=max_tokens or settings.llm_max_tokens,
         temperature=temperature if temperature is not None else settings.llm_temperature,
     )
 
     return response.choices[0].message.content
+
+
+def get_model_display_name(model: str) -> str:
+    """Get a short display name for a model."""
+    # Strip provider prefix for display
+    parts = model.split("/")
+    if len(parts) >= 2:
+        provider = parts[0]
+        name = "/".join(parts[1:])
+        return f"{name} ({provider})"
+    return model

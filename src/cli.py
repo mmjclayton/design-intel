@@ -9,9 +9,11 @@ import re
 from src.input.processor import process_input
 from src.agents.critique import CritiqueAgent
 from src.agents.orchestrator import run_multi_agent_critique
+from src.agents.ensemble import EnsembleRunner, get_ensemble_models
 from src.analysis.wcag_checker import run_wcag_check, run_wcag_check_multi
 from src.analysis.interaction_tester import run_interaction_tests
 from src.analysis.component_detector import detect_and_score_components, detect_and_score_multi
+from src.providers.llm import get_model_display_name
 from src.analysis.history import (
     build_run_record, save_run, get_previous_run, compute_diff, load_history,
 )
@@ -48,6 +50,8 @@ def critique(
     viewport_height: Optional[int] = typer.Option(None, "--viewport-height", help="Custom viewport height in px"),
     stage: str = typer.Option("production", "--stage", help="Design stage: wireframe, mockup, production"),
     deep: bool = typer.Option(False, "--deep", help="Multi-agent deep analysis (4 specialized agents in parallel)"),
+    ensemble: bool = typer.Option(False, "--ensemble", help="Run multiple models and synthesise findings"),
+    ensemble_models: Optional[str] = typer.Option(None, "--models", help="Comma-separated model list (overrides ENSEMBLE_MODELS env var)"),
     save: bool = typer.Option(False, "--save", "-s", help="Save report to output/"),
 ):
     """Run a design critique on a screenshot, URL, or description."""
@@ -115,7 +119,26 @@ def critique(
         else:
             wcag_report = run_wcag_check(design_input.dom_data)
 
-    if deep:
+    if ensemble:
+        # Ensemble mode: run multiple models in parallel, then synthesise
+        models = ensemble_models.split(",") if ensemble_models else get_ensemble_models()
+        models = [m.strip() for m in models if m.strip()]
+
+        if len(models) < 2:
+            console.print("[yellow]Ensemble mode needs at least 2 models. Add more to ENSEMBLE_MODELS in .env[/yellow]")
+            console.print("[yellow]Example: ENSEMBLE_MODELS=anthropic/claude-sonnet-4-20250514,openai/gpt-4o-mini[/yellow]")
+            console.print(f"[yellow]Currently configured: {', '.join(models)}[/yellow]")
+            raise typer.Exit(1)
+
+        console.print(f"Ensemble mode: {len(models)} models")
+        for m in models:
+            console.print(f"  - {get_model_display_name(m)}")
+
+        with console.status(f"Running {len(models)} models in parallel..."):
+            runner = EnsembleRunner(models=models, tone=tone)
+            result = runner.run(design_input, context=combined_context)
+
+    elif deep:
         # Run interaction tests and component scoring alongside agents
         interaction_report = None
         component_report = None

@@ -12,6 +12,15 @@ class Settings(BaseSettings):
     # API Keys
     anthropic_api_key: str = Field(default="")
     openai_api_key: str = Field(default="")
+    google_api_key: str = Field(default="")
+    mistral_api_key: str = Field(default="")
+    groq_api_key: str = Field(default="")
+    deepseek_api_key: str = Field(default="")
+    together_api_key: str = Field(default="")
+    openrouter_api_key: str = Field(default="")
+
+    # Ensemble
+    ensemble_models: str = Field(default="anthropic/claude-sonnet-4-20250514")
 
     # Knowledge
     knowledge_retrieval_limit: int = Field(default=2000)
