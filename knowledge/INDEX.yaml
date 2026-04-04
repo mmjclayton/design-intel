@@ -14,6 +14,7 @@ categories:
   critique:
   - critique/critical-response-process.md
   - critique/design-review-modes.md
+  - critique/design-teardowns-sources.md
   heuristics:
   - heuristics/nielsen-10-heuristics.md
   - heuristics/severity-ratings.md
@@ -128,6 +129,7 @@ tags:
   critique:
   - critique/critical-response-process.md
   - critique/design-review-modes.md
+  - critique/design-teardowns-sources.md
   methodology:
   - critique/critical-response-process.md
   - critique/design-review-modes.md
@@ -140,6 +142,17 @@ tags:
   review:
   - critique/critical-response-process.md
   - critique/design-review-modes.md
+  teardowns:
+  - critique/design-teardowns-sources.md
+  case-studies:
+  - critique/design-teardowns-sources.md
+  reference:
+  - critique/design-teardowns-sources.md
+  - systems/figma-reference-library.md
+  reasoning:
+  - critique/design-teardowns-sources.md
+  experimentation:
+  - critique/design-teardowns-sources.md
   heuristics:
   - heuristics/nielsen-10-heuristics.md
   - heuristics/severity-ratings.md
@@ -285,8 +298,6 @@ tags:
   naming:
   - systems/design-tokens.md
   figma:
-  - systems/figma-reference-library.md
-  reference:
   - systems/figma-reference-library.md
   templates:
   - systems/figma-reference-library.md

@@ -432,3 +432,78 @@ Search ACM Digital Library (https://dl.acm.org) for open-access versions of:
 - Nielsen (1994) CHI '94 heuristics enhancement paper
 - Gerhardt-Powals (1996) cognitive engineering principles (IJHCI)
 - Fitts (1954) motor system information capacity paper (foundational)
+
+---
+
+# Design Teardowns & Case Studies: Reference Corpus
+
+## Overview
+
+Curated reference library of high-quality, publicly available sources where designers articulate the *reasoning* behind specific UI decisions - not just the outcomes.
+
+## Category 1: Company Design Team Blogs (First-Party)
+
+| Source | URL | Reasoning Depth | Key Strength |
+|--------|-----|-----------------|--------------|
+| Stripe Blog | https://stripe.com/blog | 5/5 | Three-tier quality framework (utility, aesthetics, seamlessness) |
+| Linear Blog | https://linear.app/blog | 5/5 | Opinionated defaults, constraints-first philosophy |
+| GOV.UK Design Notes | https://designnotes.blog.gov.uk | 5/5 | Every component change documented with research evidence |
+| Signal v. Noise | https://signalvnoise.com/design | 5/5 | Explicit design-decision breakdowns |
+| Netflix Tech Blog | https://netflixtechblog.com | 4/5 | A/B test methodology for UI decisions |
+| Airbnb Design | https://airbnb.design | 4/5 | Design systems, custom typeface rationale |
+| Intercom Blog | https://www.intercom.com/blog | 4/5 | Product principles, decision frameworks |
+| Etsy Code as Craft | https://www.etsy.com/codeascraft | 4/5 | Experimentation culture, design system retrospectives |
+| Shopify Polaris Blog | https://polaris.shopify.com | 3/5 | Design system scaling and consistency |
+| Figma Blog | https://www.figma.com/blog | 3/5 | Practitioner case studies and interviews |
+| Uber Design | https://www.uber.com/blog/design/ | 3/5 | Design system and accessibility reasoning |
+
+## Category 2: Systematic UI Teardown Channels & Newsletters
+
+| Source | URL | Reasoning Depth | Key Strength |
+|--------|-----|-----------------|--------------|
+| Kristen Berman (Substack) | https://kristenberman.substack.com | 5/5 | Behavioural science applied to UI choices |
+| Refactoring UI | https://refactoringui.com | 5/5 | Live redesigns with hierarchy/spacing/contrast reasoning |
+| Jakob Nielsen (Substack) | https://jakobnielsenphd.substack.com | 4/5 | Analytical UX writing, critique methodology |
+| UI Patterns Teardowns | https://teardowns.ui-patterns.com | 4/5 | Observations linked to named UI patterns |
+| Lenny's Newsletter | https://www.lennysnewsletter.com | 4/5 | Product decision-making interviews |
+| High Resolution | https://highresolution.design | 4/5 | Design leadership interviews on process |
+| First Round Review | https://review.firstround.com | 5/5 | In-depth founder/designer decision conversations |
+
+## Category 3: Case Study Aggregators
+
+| Source | URL | Reasoning Depth | Cost |
+|--------|-----|-----------------|------|
+| UX Collective | https://uxdesign.cc | 3/5 | Free (Medium paywall for some) |
+| Bootcamp (UX Collective) | https://bootcamp.uxdesign.cc | 3/5 | Free (Medium paywall) |
+| UX Planet | https://uxplanet.org | 2/5 | Free (Medium paywall) |
+| Page Flows | https://pageflows.com | 2/5 | Paid (visual only, no written rationale) |
+| Mobbin | https://mobbin.com | 2/5 | Free + paid (screenshot library) |
+
+## Category 4: A/B Test & Experimentation Write-ups
+
+| Source | URL | Reasoning Depth | Key Strength |
+|--------|-----|-----------------|--------------|
+| Netflix Decision Making | https://netflixtechblog.com | 5/5 | Methodology for A/B testing UI changes |
+| Booking.com Experimentation | https://booking.ai | 5/5 | Canonical experiment-driven design culture |
+| Irrational Labs | https://irrationallabs.com/blog | 5/5 | Experimental results linked to behavioural frameworks |
+| CXL CRO & Testing | https://cxl.com/blog/category/cro-testing/ | 4/5 | Experiment design and interpretation |
+| Etsy Experimentation | https://www.etsy.com/codeascraft | 4/5 | Real-world experiment setups |
+
+## Category 5: Design Retrospectives & Post-Mortems
+
+| Source | URL | Reasoning Depth | Key Lesson |
+|--------|-----|-----------------|------------|
+| Signal v. Noise Archives | https://signalvnoise.com/archives | 5/5 | Revisiting and revising earlier decisions |
+| GOV.UK Component Changes | https://designnotes.blog.gov.uk/category/design-system/ | 5/5 | Documented revisions with research evidence |
+| Booking.com A/B Failures | https://booking.ai | 5/5 | Intuitive "improvements" that reduced performance |
+| Etsy Design System Retro | https://marvelapp.com/blog/etsys-design-system/ | 5/5 | Organisational design failure and recovery |
+| Intercom Revisiting Decisions | https://www.intercom.com/blog | 4/5 | How scale breaks early design choices |
+
+## Heuristic Filters for Quality Content
+
+When searching these sources, prioritise posts containing:
+- "We decided to..." / "We chose to..." + explanation
+- "We tested..." + "the results showed..."
+- "We initially thought..." + "but then we found..."
+- "The constraint was..." / "The trade-off was..."
+- "We reversed..." / "We rolled back..." / "We deprecated..."
