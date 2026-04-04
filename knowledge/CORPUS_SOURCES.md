@@ -507,3 +507,34 @@ When searching these sources, prioritise posts containing:
 - "We initially thought..." + "but then we found..."
 - "The constraint was..." / "The trade-off was..."
 - "We reversed..." / "We rolled back..." / "We deprecated..."
+
+---
+
+# Design System Documentation Sites
+
+Publicly accessible design system documentation for component patterns, usage rules, and design decision rationale.
+
+## Big Tech Platform Systems
+
+| System | URL | Rationale Quality | Strongest On |
+|--------|-----|-------------------|--------------|
+| Apple HIG | https://developer.apple.com/design/human-interface-guidelines | Exceptional | Decision rationale, writing guidelines, navigation |
+| Material Design 3 | https://m3.material.io | Strong | Design tokens, motion, accessible colour |
+| Microsoft Fluent 2 | https://fluent2.microsoft.design | Moderate-Strong | Cross-platform, Figma-to-code |
+| IBM Carbon | https://carbondesignsystem.com | Exceptional | Four-tab component docs (Usage/Style/Code/Accessibility) |
+
+## Product Company Systems
+
+| System | URL | Rationale Quality | Context |
+|--------|-----|-------------------|---------|
+| Shopify Polaris | https://polaris.shopify.com | Moderate | E-commerce admin |
+| GitHub Primer | https://primer.style | Moderate | Developer-facing, content-heavy |
+| Atlassian Design System | https://atlassian.design | Moderate | Enterprise collaboration |
+| Salesforce Lightning | https://www.lightningdesignsystem.com | Moderate | Enterprise CRM |
+
+## Government & Public Sector
+
+| System | URL | Rationale Quality | Context |
+|--------|-----|-------------------|---------|
+| GOV.UK Design System | https://design-system.service.gov.uk | Exceptional | Government services, accessibility-first |
+| U.S. Web Design System | https://designsystem.digital.gov | Strong | Federal government services |

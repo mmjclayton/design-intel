@@ -41,6 +41,7 @@ categories:
   - systems/apple-hig.md
   - systems/atomic-design.md
   - systems/carbon-design.md
+  - systems/design-system-documentation.md
   - systems/design-tokens.md
   - systems/figma-reference-library.md
   - systems/material-design-3.md
@@ -64,6 +65,7 @@ tags:
   - accessibility/annotation-standards.md
   documentation:
   - accessibility/annotation-standards.md
+  - systems/design-system-documentation.md
   wcag:
   - accessibility/annotation-standards.md
   - accessibility/contrast-ratios-wcag.md
@@ -148,6 +150,7 @@ tags:
   - critique/design-teardowns-sources.md
   reference:
   - critique/design-teardowns-sources.md
+  - systems/design-system-documentation.md
   - systems/figma-reference-library.md
   reasoning:
   - critique/design-teardowns-sources.md
@@ -170,6 +173,7 @@ tags:
   components:
   - interaction/component-states.md
   - systems/atomic-design.md
+  - systems/design-system-documentation.md
   - systems/figma-reference-library.md
   - systems/material-design-3.md
   states:
@@ -182,6 +186,7 @@ tags:
   patterns:
   - interaction/component-states.md
   - interaction/navigation-patterns.md
+  - systems/design-system-documentation.md
   - systems/figma-reference-library.md
   forms:
   - interaction/form-design-patterns.md
@@ -275,6 +280,7 @@ tags:
   - systems/apple-hig.md
   - systems/atomic-design.md
   - systems/carbon-design.md
+  - systems/design-system-documentation.md
   - systems/design-tokens.md
   - systems/figma-reference-library.md
   - systems/material-design-3.md
@@ -291,6 +297,8 @@ tags:
   - systems/carbon-design.md
   enterprise:
   - systems/carbon-design.md
+  rationale:
+  - systems/design-system-documentation.md
   design-tokens:
   - systems/design-tokens.md
   css-variables:
