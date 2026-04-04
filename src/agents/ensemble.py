@@ -38,10 +38,17 @@ points, the consensus is strong. If the range exceeds 20 points, note the disagr
 6. **Do NOT add your own findings.** Only synthesise what the models reported. \
 Your job is editorial, not analytical.
 
-7. **Preserve specificity.** If one model cited exact pixel values, contrast ratios, \
-or CSS selectors, use those exact values in the consensus report.
+7. **CRITICAL: Preserve ALL specificity.** Copy exact hex colour values (#b8b8b8), \
+pixel measurements (36x36px, 13x13px), contrast ratios (1.98:1, 4.29:1), CSS selectors \
+(.welcome-screen-center__heading), CSS token names (var(--color-gray-40)), and WCAG \
+criterion numbers (1.4.3, 2.5.8) from the model outputs into your synthesis. Do NOT \
+summarise "contrast issues" when a model said "#b8b8b8 on #ffffff = 1.98:1". Use the \
+exact values.
 
-8. **Credit sources.** When a finding came from a specific model, note it: \
+8. **Include all CSS custom properties and design tokens** mentioned by any model. \
+If a model listed token names, include them in your Design System section.
+
+9. **Credit sources.** When a finding came from a specific model, note it: \
 "(identified by Model A)" or "(all models agree)".
 
 ## Output format:
@@ -127,35 +134,55 @@ class EnsembleRunner:
         return self._synthesise(wcag_report, model_results)
 
     def _synthesise(self, wcag_report, model_results: dict) -> str:
-        """Run the synthesis agent to merge all model outputs."""
+        """Build the full ensemble report: WCAG + each model verbatim + synthesis."""
 
-        # Build the synthesis prompt with all model outputs
-        parts = [
-            "## Pre-Computed WCAG Audit (deterministic, all models received this same data)\n",
-            wcag_report.to_markdown(),
-            "\n---\n",
-            f"## Individual Model Critiques ({len(model_results)} models)\n",
-        ]
+        sections = []
 
+        # Header
+        sections.append("# Ensemble Design Critique Report\n")
+        sections.append(
+            f"**{len(model_results)} models** analysed this design independently. "
+            f"Each model's full critique is preserved below, followed by a synthesis "
+            f"identifying consensus, unique insights, and disagreements.\n"
+        )
+
+        # WCAG checker (deterministic)
+        sections.append("---\n")
+        sections.append(wcag_report.to_markdown())
+
+        # Each model's full output — preserved verbatim
         for model_id, output in model_results.items():
             display = get_model_display_name(model_id)
-            parts.append(f"\n### Critique from: {display}\n")
-            parts.append(output[:8000])  # Cap per-model output to fit context
-            parts.append("\n---\n")
+            sections.append("\n---\n")
+            sections.append(f"# Critique: {display}\n")
+            sections.append(output)
 
-        parts.append(
-            "\nSynthesise these critiques into a single consensus report. "
-            "Identify where models agree, disagree, and what unique findings each caught."
+        # Synthesis — additive layer on top
+        synthesis_input_parts = [
+            f"## Individual Model Critiques ({len(model_results)} models)\n",
+        ]
+        for model_id, output in model_results.items():
+            display = get_model_display_name(model_id)
+            synthesis_input_parts.append(f"\n### {display}\n")
+            synthesis_input_parts.append(output[:12000])
+
+        synthesis_input_parts.append(
+            "\nSynthesise these critiques. Identify consensus, unique findings, "
+            "and disagreements. Preserve ALL exact values (hex colours, pixel "
+            "measurements, contrast ratios, CSS selectors, token names)."
         )
 
-        synthesis_input = "\n".join(parts)
-
-        # Use the primary model for synthesis
-        return call_llm(
+        synthesis = call_llm(
             system_prompt=SYNTHESIS_PROMPT,
-            user_prompt=synthesis_input,
+            user_prompt="\n".join(synthesis_input_parts),
             max_tokens=8000,
         )
+
+        sections.append("\n---\n")
+        sections.append("# Synthesis: Cross-Model Consensus\n")
+        sections.append(synthesis)
+
+        return "\n".join(sections)
 
 
 def get_ensemble_models() -> list[str]:
