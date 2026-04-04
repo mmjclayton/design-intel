@@ -6,6 +6,7 @@ from rich.markdown import Markdown
 
 from src.input.processor import process_input
 from src.agents.critique import CritiqueAgent
+from src.analysis.wcag_checker import run_wcag_check, run_wcag_check_multi
 from src.knowledge.index import build_index
 from src.output.formatter import save_report
 
@@ -84,6 +85,47 @@ def critique(
 
     if save:
         path = save_report(result, "critique")
+        console.print(f"\nSaved to {path}")
+
+
+@app.command()
+def wcag(
+    url: Optional[str] = typer.Option(None, "--url", "-u", help="URL to audit"),
+    image: Optional[str] = typer.Option(None, "--image", "-i", help="Not supported for WCAG audit"),
+    crawl: bool = typer.Option(False, "--crawl", help="Crawl app and audit multiple pages"),
+    max_pages: int = typer.Option(10, "--max-pages", help="Max pages to crawl"),
+    device: Optional[str] = typer.Option(None, "--device", help=f"Device preset: {', '.join(DEVICE_PRESETS.keys())}"),
+    save: bool = typer.Option(False, "--save", "-s", help="Save report to output/"),
+):
+    """Run a standalone WCAG 2.2 audit (no LLM, deterministic)."""
+    if not url:
+        console.print("[red]WCAG audit requires --url[/red]")
+        raise typer.Exit(1)
+
+    vw, vh = 1440, 900
+    if device:
+        preset = DEVICE_PRESETS.get(device)
+        if preset:
+            vw, vh = preset["width"], preset["height"]
+            console.print(f"Using device: {preset['label']} ({vw}x{vh})")
+
+    with console.status("Crawling and analysing..." if crawl else "Analysing..."):
+        design_input = process_input(
+            url=url, crawl=crawl, max_pages=max_pages,
+            viewport_width=vw, viewport_height=vh,
+        )
+
+    with console.status("Running WCAG checks..."):
+        if design_input.pages and len(design_input.pages) > 1:
+            report = run_wcag_check_multi(design_input.pages)
+        else:
+            report = run_wcag_check(design_input.dom_data)
+
+    result = report.to_markdown()
+    console.print(Markdown(result))
+
+    if save:
+        path = save_report(result, "wcag-audit")
         console.print(f"\nSaved to {path}")
 
 

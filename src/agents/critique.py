@@ -1,4 +1,5 @@
 from src.agents.base import BaseAgent
+from src.analysis.wcag_checker import run_wcag_check, run_wcag_check_multi
 from src.input.models import DesignInput, InputType
 from src.knowledge.retriever import retrieve
 
@@ -36,16 +37,14 @@ the computed ratio, and the WCAG requirement. Reference WCAG 2.2 AA standards.
 a system and which are arbitrary. Reference existing spacing tokens if defined.
 5. **Layout & Composition** - Grid structure, screen real estate distribution, responsive \
 readiness.
-6. **Accessibility (WCAG 2.2)** - This is a major section. Use ALL of the HTML structure data:
-   - Semantic HTML: landmarks (`<main>`, `<nav>`, `<aside>`, `<header>`), heading hierarchy
-   - `lang` attribute on `<html>`
-   - Skip navigation link presence
-   - Form inputs without programmatic labels (cite each one with its selector)
-   - ARIA usage (roles, labels, live regions)
-   - Touch targets below 44x44px (cite each with exact dimensions and selector)
-   - Non-text contrast failures (UI component boundaries, WCAG 1.4.11)
-   - Focus styles (cite which elements lack custom focus-visible styles)
-   - Reference specific WCAG success criteria by number (e.g. WCAG 2.4.7 Focus Visible)
+6. **Accessibility (WCAG 2.2)** - You will receive a **pre-computed WCAG audit report** with \
+deterministic pass/fail results. DO NOT re-evaluate these criteria yourself. The programmatic \
+checker is 100% accurate. Instead:
+   - Include the WCAG report verbatim in your Accessibility Audit section
+   - Add subjective commentary where relevant (e.g. "the focus ring colour may not be \
+visible enough on this specific background")
+   - Only flag accessibility issues NOT covered by the checker (e.g. cognitive load, \
+content readability, error message quality, colour-only information)
 7. **Interaction Patterns** - Affordances, state visibility, platform conventions.
 8. **Consistency** - Reference the CSS tokens to identify where the design system is followed \
 vs where values are hardcoded. Flag inconsistencies between tokens and actual usage.
@@ -691,6 +690,21 @@ class CritiqueAgent(BaseAgent):
 
         if context:
             parts.append(f"## Context\n{context}")
+
+        # Pre-computed WCAG audit (deterministic, 100% accurate)
+        if design_input.pages and len(design_input.pages) > 1:
+            wcag_report = run_wcag_check_multi(design_input.pages)
+        else:
+            wcag_report = run_wcag_check(design_input.dom_data)
+
+        wcag_md = wcag_report.to_markdown()
+        parts.append(
+            "## Pre-Computed WCAG Audit (Deterministic - DO NOT re-evaluate)\n\n"
+            "The following results are computed programmatically and are 100% accurate. "
+            "Include them verbatim in your Accessibility Audit section. Do not contradict "
+            "or re-interpret these results.\n\n"
+            + wcag_md
+        )
 
         # Multi-page data (if crawled)
         if design_input.pages and len(design_input.pages) > 1:
