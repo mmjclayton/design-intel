@@ -18,8 +18,11 @@ def process_url(
     viewport_width: int = 1440,
     viewport_height: int = 900,
 ) -> DesignInput:
+    # Use viewport-specific output paths to avoid overwriting between desktop/mobile runs
+    vp_suffix = f"{viewport_width}x{viewport_height}"
+
     if crawl:
-        page_dicts = crawl_app(url, max_pages=max_pages, viewport_width=viewport_width, viewport_height=viewport_height)
+        page_dicts = crawl_app(url, output_dir=f"output/pages-{vp_suffix}", max_pages=max_pages, viewport_width=viewport_width, viewport_height=viewport_height)
         if not page_dicts:
             raise RuntimeError(f"Failed to capture any pages from {url}")
 
@@ -45,7 +48,7 @@ def process_url(
             pages=pages,
         )
 
-    screenshot_path, page_text, dom_data = capture_url(url, viewport_width=viewport_width, viewport_height=viewport_height)
+    screenshot_path, page_text, dom_data = capture_url(url, output_path=f"output/screenshot-{vp_suffix}.png", viewport_width=viewport_width, viewport_height=viewport_height)
     return DesignInput(
         type=InputType.URL,
         image_path=screenshot_path,
