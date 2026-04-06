@@ -102,14 +102,6 @@ First benchmarking pass before user feedback. Key issues:
 
 ---
 
-An agent-based CLI + MCP server for UX/UI design review. Combines deterministic analysis (WCAG checker, axe-core, component scoring, fix generator, brand rules), LLM critique (single-agent, 4-agent parallel, multi-model ensemble), and an interactive + autonomous review loop that drives a real browser via Playwright.
-
-Outperforms raw Claude Opus and Sonnet sessions on structured design critique benchmarks (**94% ensemble vs 76% Opus / 76% Sonnet**) by combining deterministic analysis, multi-agent architecture, and multi-model ensemble synthesis.
-
-Not trying to replace an LLM — trying to be **the layer between a website and an LLM** that catches the things LLMs can't see (exact pixel measurements, alpha-composited contrast, cross-page patterns, regression-vs-baseline) and hands the LLM grounded facts it can reason about.
-
----
-
 ## 60-second quickstart
 
 ```bash
@@ -1058,9 +1050,9 @@ Work is tracked in two paired files:
 - **`Backlog.md`** (this repo) — tactical: items committed to shipping, with full CLI-observable acceptance criteria. Read this to see what's in progress and what ships next.
 - **`../design-agent-private/ROADMAP.md`** (private) — strategic horizon with the prioritised P-list and the complete shipped history.
 
-**Shipped so far** (30 items): critique agent + 39-entry knowledge library, DOM extraction + SPA crawl, 11-criterion WCAG checker, regression tracking, multi-agent architecture (4 agents in parallel), interaction testing, component scoring, stage-aware critique, dual viewport + 8 device presets, developer handoff specs, multi-model ensemble (9 providers), axe-core integration (100+ rules), HTML reports, stealth mode, screenshot-only mode, quality fixes (reconciliation, deduplication, alpha compositing), **auto-fix generation**, **MCP server**, **Claude Code project config + hooks**, **claude-code-action workflow**, **competitive benchmarking**, **pragmatic CI gate**, **before/after diff (with visual PNG)**, **scheduled monitoring + Slack webhook alerts**, **design system extractor**, **PDF export**, **custom brand rules**, **interactive review + pragmatic flags**, **user flow analysis**, **interactive + autopilot review modes**.
+**Shipped so far** (35 items): critique agent + 39-entry knowledge library, DOM extraction + SPA crawl, 11-criterion WCAG checker, regression tracking, multi-agent architecture (4 agents in parallel), interaction testing, component scoring, stage-aware critique, dual viewport + 8 device presets, developer handoff specs, multi-model ensemble (9 providers), axe-core integration (100+ rules), HTML reports, stealth mode, screenshot-only mode, quality fixes (reconciliation, deduplication, alpha compositing), auto-fix generation, MCP server, Claude Code project config + hooks, claude-code-action workflow, competitive benchmarking, pragmatic CI gate, before/after diff (with visual PNG), scheduled monitoring + Slack webhook alerts, design system extractor, PDF export, custom brand rules, interactive review + pragmatic flags, user flow analysis, autopilot (LLM-driven browser), ship-ready polish (`init` + project config), **opinionated UI audit** (7-category deterministic scoring + LLM opinion layer), **style guide extraction + comparison**, **component style extraction**, **feedback iteration (v2)**.
 
-**Next up** (in priority order): PDF Export, Custom Design Rules, User Flow Analysis, Performance + Design (Lighthouse), Design Documentation Generator, Watch Mode, Figma Input, Browser Extension, Plugin System, Web Dashboard.
+**Next up** (in priority order): Performance + Design (Lighthouse integration), Design Documentation Generator, Watch Mode, Figma Input, Browser Extension, Plugin System, Web Dashboard.
 
 ## Sample reports
 
