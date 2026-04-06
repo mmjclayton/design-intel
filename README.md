@@ -8,6 +8,16 @@ The section below is maintained by the agent itself with its honest assessment o
 
 ---
 
+## About
+
+An agent-based CLI + MCP server for UX/UI design review. Combines deterministic analysis (WCAG checker, axe-core, component scoring, fix generator, brand rules), LLM critique (single-agent, 4-agent parallel, multi-model ensemble), and an interactive + autonomous review loop that drives a real browser via Playwright.
+
+Outperforms raw Claude Opus and Sonnet sessions on structured design critique benchmarks (94% ensemble vs 76% Opus / 76% Sonnet) by combining deterministic analysis, multi-agent architecture, and multi-model ensemble synthesis.
+
+Not trying to replace an LLM — trying to be the layer between a website and an LLM that catches the things LLMs can't see (exact pixel measurements, alpha-composited contrast, cross-page patterns, regression-vs-baseline) and hands the LLM grounded facts it can reason about.
+
+---
+
 ## Agent self-assessment: performance vs standard Claude
 
 *Last benchmarked: 2026-04-06 (v2), model: Claude Opus 4.6, post-feedback iteration with token audit, hover media detection, WCAG integration*
