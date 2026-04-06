@@ -10,7 +10,7 @@ The section below is maintained by the agent itself with its honest assessment o
 
 ## Agent self-assessment: performance vs standard Claude
 
-*Last benchmarked: 2026-04-06, model: Claude Opus 4.6, post-feedback iteration*
+*Last benchmarked: 2026-04-06 (v2), model: Claude Opus 4.6, post-feedback iteration with token audit, hover media detection, WCAG integration*
 
 ### Benchmark scores (ui-audit, deterministic layer only)
 
@@ -18,6 +18,7 @@ The section below is maintained by the agent itself with its honest assessment o
 |------|-------|-------------|---------------------------|
 | HST Tracker (authenticated app) | 93.6/100 | Hover states gated behind `@media (hover: hover)` correctly detected; 11 spacing values on 73% grid adherence; WCAG integrated | Standard Claude sees a screenshot — can't measure grid adherence, detect media queries, or count token usage |
 | Linear.app | 79.8/100 | 15 text colours, 15 bg colours (palette sprawl); unlabelled interactive element; generic "More" button | Standard Claude would note "clean design" — it can't count distinct computed colours or detect unlabelled elements |
+| Notion.com | 75.9/100 | 408 tokens on `:root` detected; 12 hardcoded values flagged against existing tokens; 13-field form; 14 font sizes; WCAG 62.5% (missing skip nav, 2 contrast failures, 2 undersized targets) | Standard Claude can't read 408 CSS custom properties, can't detect which computed values bypass the token system, can't run WCAG checks |
 | Stripe.com | 75.0/100 | 14 bg colours, 20 unlabelled links (`a.hds-link`), no hover states detected, 5 one-off colours | Standard Claude sees a polished page — it can't detect that 20 links have no programmatic label |
 | Hacker News | 79.2/100 | No H1, no headings at all, no landmarks, 30 links all under 24px, 13px body font | Standard Claude would note "minimal design" — it can't measure that every link is 16px tall or that body text is 13.3px |
 
@@ -42,6 +43,30 @@ The section below is maintained by the agent itself with its honest assessment o
 - **Component pattern heuristics are shallow.** "Form has 14 fields" is a useful flag but doesn't understand that some fields are optional, grouped, or conditionally shown.
 - **The LLM opinion layer is only as good as the model.** It sometimes repeats what the deterministic layer already said, or hallucinates issues that aren't there. The `--no-llm` flag exists for a reason.
 - **Navigation labels flagged as needing verbs** was a false positive in the first iteration. Fixed — the agent now distinguishes `<button>` actions from `<a>` navigation. But edge cases remain (buttons styled as nav, links styled as buttons).
+
+### Assessment history
+
+<details>
+<summary>v1 — 2026-04-06 (initial)</summary>
+
+First benchmarking pass before user feedback. Key issues:
+- Fabricated "Proposed Design System" that invented token names and misassigned colour semantics
+- Flagged nav labels (Insights, Exercises) as needing action verbs — false positive
+- Included border widths (1px, 2px) in spacing analysis — inflated "off-grid" counts
+- Scored modular type scale deviation as a penalty — punished valid pragmatic scales
+- Missed `@media (hover: hover)` gated styles — reported 0% hover coverage as critical
+- Colour dominance weighted by element count — falsely flagged apps with dark shells as "monotonous"
+- No WCAG/accessibility data in report
+- No Notion benchmark
+
+| Site | Score (v1) |
+|------|-----------|
+| HST Tracker | 93.7 |
+| Linear | 76.5 |
+| Stripe | 72.0 |
+| HN | 79.0 |
+
+</details>
 
 ---
 
