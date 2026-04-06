@@ -36,6 +36,28 @@ The section below is maintained by the agent itself with its honest assessment o
 
 6. **Compares against reference sites.** Extract a style guide from Linear or Stripe, then score your app against it — button styles, input styles, colour palettes, type scales. Standard Claude has no persistent reference to compare against.
 
+### What this agent finds that standard models cannot — detailed examples
+
+*Written 2026-04-06, based on benchmark runs against 5 production sites*
+
+**1. Token system integrity.** On Notion, the agent read 408 CSS custom properties from `:root` and found that `#000000` is used 512 times as a hardcoded value instead of going through a token. A model looking at a screenshot sees "black text" — it has no idea whether that black comes from `var(--text-color-dark)` or a hardcoded hex. The agent catches the gap between the system the developers built and how it's actually used.
+
+**2. Exact measurements, not guesses.** When the agent says Hacker News has 30 links all under 24px tall, it measured every `getBoundingClientRect()`. When it says Stripe has 14 font sizes, it counted computed `fontSize` across every DOM element. A standard model will say "the links look small" or "there seem to be many font sizes" — it's guessing from pixels on a screen.
+
+**3. Hover states gated behind media queries.** HST Tracker wraps all hover styles in `@media (hover: hover)` to prevent sticky hover on touch devices. A standard model sees the screenshot, triggers hover somehow (or doesn't), and reports "no hover states." This agent scans the actual CSS rules, finds the media query, and correctly reports "hover states exist but are gated for touch devices" instead of a false alarm.
+
+**4. ARIA and semantic HTML.** Stripe has 20 links (`a.hds-link`) with no visible text and no `aria-label`. Notion has 5 unlabelled interactive elements. These are completely invisible in a screenshot — the links look fine visually. The agent reads the DOM attributes directly and catches what screen readers would actually encounter.
+
+**5. Form field counts.** Notion has a 13-field form. The agent counted every `<input>` and `<textarea>` that isn't `type="hidden"`, checked which have labels, and flagged the form as an abandonment risk. A standard model might notice "there's a form" but can't reliably count fields from a screenshot, especially if some are below the fold.
+
+**6. Spacing grid adherence as a percentage.** The agent doesn't say "spacing looks inconsistent" — it says "73% of your spacing values align to a 4px grid, and these specific values (6px, 10px, 18px) are off-grid." That's computed from every `padding`, `margin`, and `gap` value on every element. A standard model has no access to computed spacing values.
+
+**7. Cross-page systemic issues.** When crawling HST Tracker across 7 pages, the agent found that 0% hover state coverage appears on every single page — it's systemic, not a one-page problem. "LOADOUT" in all-caps HTML appears on 6/7 pages. A standard model reviews one screenshot at a time and can't detect patterns across an app.
+
+**8. Contrast ratios from composited backgrounds.** The agent doesn't just check `color` vs `background-color` — it walks up the DOM tree compositing semi-transparent backgrounds (alpha compositing `rgba` layers) to get the actual rendered background colour, then computes the real contrast ratio. A standard model eyeballs contrast from a screenshot and frequently gets it wrong on layered backgrounds.
+
+**Where standard models still win.** The LLM opinion layer (layout balance, visual flow, "does this page communicate its purpose?") is where standard models add value. The agent's deterministic layer can't judge whether a page *feels* right — it can only measure whether the CSS is disciplined. That's why both layers exist.
+
 ### Honest limitations
 
 - **Hover detection is incomplete.** Playwright's headless mode doesn't activate `@media (hover: hover)` rules. The agent now detects the media query and reports it correctly, but can't verify the actual hover styles fire.
