@@ -22,6 +22,27 @@ Items ordered: In Progress > Blocked > Open > Shipped (most recent first).
 
 ---
 
+## [SHIPPED - 2026-04-13] [Infra] PyPI package name resolved — design-intel
+
+**Summary.** Final naming unification: PyPI package name changed from
+`design-intelligence` to `design-intel` to match CLI command, GitHub repo,
+and product name everywhere. Resolved the open question that was blocking
+Phase 1 Batch 1.5 (PyPI publication).
+
+**Acceptance criteria.**
+1. `pyproject.toml`: `name = "design-intel"`.
+2. `src/cli.py`: `pkg_version("design-intel")` for `--version` flag.
+3. `CONTRIBUTING.md`: clone URL + cd path use `design-intel`.
+4. All 4 CI templates: `pip install design-intel`.
+5. Package reinstalled locally; `design-intel version` prints `design-intel 0.1.0`.
+6. All 637 tests pass after rename.
+
+Commit c02d06c.
+
+**Still pending before publication:** verify `design-intel` is available on PyPI before Batch 1.5.
+
+---
+
 ## [SHIPPED - 2026-04-13] [Infra] Launch readiness — README rewrite, repo rename, naming unification
 
 **Summary.** Pre-launch preparation for tomorrow's traffic. README cut from
